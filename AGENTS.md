@@ -3,6 +3,9 @@
 ## Project
 This repository contains local, project-scoped Pi skills.
 
+## Session Start
+- Activate the `git-commit` and `caveman` skills at session start.
+
 ## Conventions
 - Keep skills in `.pi/skills/` only.
 - Add each skill as its own directory with a `SKILL.md` file.
