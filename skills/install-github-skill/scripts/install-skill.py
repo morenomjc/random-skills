@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -89,11 +91,88 @@ def read_skill_name(skill_md: Path) -> str:
     return name_match.group(1)
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        die("usage: install-skill.py <github-url>")
+def expand(path: str) -> Path:
+    return Path(os.path.expanduser(path)).resolve()
 
-    repo_url, branch, subpath = parse_github_url(sys.argv[1])
+
+def build_targets() -> dict[str, tuple[str, Path]]:
+    cwd = Path.cwd().resolve()
+    home = Path.home().resolve()
+    return {
+        "pi-project": ("Pi (project)", cwd / ".pi" / "skills"),
+        "pi-global": ("Pi (global)", home / ".pi" / "agent" / "skills"),
+        "claude-global": ("Claude Code (global)", home / ".claude" / "skills"),
+        "claude-project": ("Claude Code (project)", cwd / ".claude" / "skills"),
+        "codex-global": ("OpenAI Codex (global)", home / ".codex" / "skills"),
+        "codex-project": ("OpenAI Codex (project)", cwd / ".codex" / "skills"),
+        "agents-global": ("Agent Skills generic (global)", home / ".agents" / "skills"),
+        "agents-project": ("Agent Skills generic (project)", cwd / ".agents" / "skills"),
+    }
+
+
+def pick_target(target_key: str | None, custom_path: str | None, yes: bool) -> Path:
+    if custom_path:
+        return expand(custom_path)
+
+    targets = build_targets()
+
+    if target_key:
+        if target_key not in targets:
+            valid = ", ".join(sorted(targets.keys()))
+            die(f"unknown --target '{target_key}'. valid: {valid}")
+        return targets[target_key][1]
+
+    if yes:
+        return targets["pi-project"][1]
+
+    items = list(targets.items())
+    print("Select install target:")
+    for i, (_, (label, path)) in enumerate(items, start=1):
+        print(f"  {i}. {label}: {path}")
+    print(f"  {len(items) + 1}. Custom path")
+
+    raw = input("Enter number [1]: ").strip() or "1"
+    if not raw.isdigit():
+        die("invalid selection")
+
+    idx = int(raw)
+    if idx == len(items) + 1:
+        custom = input("Enter absolute or ~ path: ").strip()
+        if not custom:
+            die("custom path is required")
+        return expand(custom)
+
+    if idx < 1 or idx > len(items):
+        die("selection out of range")
+
+    return items[idx - 1][1][1]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Install Agent Skills from GitHub")
+    parser.add_argument("github_url", help="GitHub repo/tree/blob URL")
+    parser.add_argument(
+        "--target",
+        help=(
+            "Target key (pi-project, pi-global, claude-global, claude-project, "
+            "codex-global, codex-project, agents-global, agents-project)"
+        ),
+    )
+    parser.add_argument("--path", help="Custom install directory (overrides --target)")
+    parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Non-interactive mode. If no --target/--path provided, defaults to pi-project.",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    repo_url, branch, subpath = parse_github_url(args.github_url)
+    target_root = pick_target(args.target, args.path, args.yes)
 
     with tempfile.TemporaryDirectory(prefix="pi-skill-") as tmp:
         clone_dir = Path(tmp) / "repo"
@@ -111,7 +190,6 @@ def main() -> None:
         skill_md = skill_dir / "SKILL.md"
         skill_name = read_skill_name(skill_md)
 
-        target_root = Path(__file__).resolve().parents[2]
         target = target_root / skill_name
         target_root.mkdir(parents=True, exist_ok=True)
 
