@@ -1,11 +1,11 @@
 # Random Skills
 
-Local Pi skills for this folder live in `.pi/skills/`.
+Skills in this repo are kept in `skills/` (outside Pi auto-discovery paths).
 
 ## Skills
 
-- [fda-registration-verifier](.pi/skills/fda-registration-verifier/SKILL.md) — Verify Philippine FDA registration details by registration number or product name.
-- [install-github-skill](.pi/skills/install-github-skill/SKILL.md) — Install a Pi skill from a public GitHub repository or GitHub tree URL into this repo’s `.pi/skills/` directory.
+- [fda-registration-verifier](skills/fda-registration-verifier/SKILL.md) — Verify Philippine FDA registration details by registration number or product name.
+- [install-github-skill](skills/install-github-skill/SKILL.md) — Install a Pi skill from a public GitHub repository or GitHub tree URL into this repo’s local skill archive.
 
 ## Conventions
 
@@ -16,5 +16,5 @@ Local Pi skills for this folder live in `.pi/skills/`.
 Example:
 
 ```text
-.pi/skills/my-skill/SKILL.md
+skills/my-skill/SKILL.md
 ```
